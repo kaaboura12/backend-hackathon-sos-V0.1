@@ -13,16 +13,23 @@ datasource db {
 // This satisfies the "5 years later" requirement where a SuperAdmin 
 // can create new roles and assign specific privileges[cite: 96, 99].
 
+enum UserStatus {
+  PENDING   // Awaiting SuperAdmin approval
+  APPROVED  // Can sign in
+  REJECTED  // Registration rejected
+}
+
 model User {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
-  email         String    @unique
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  email         String     @unique
   password      String
   firstName     String
   lastName      String
-  villageName   String?   // "Programme (village)" [cite: 51]
-  
-  roleId        String    @db.ObjectId
-  role          Role      @relation(fields: [roleId], references: [id])
+  villageName   String?    // "Programme (village)" [cite: 51]
+  status        UserStatus @default(PENDING)
+
+  roleId        String     @db.ObjectId
+  role         Role       @relation(fields: [roleId], references: [id])
 
   reportsCreated  Report[]       @relation("CreatedBy")
   reportsAssigned Report[]       @relation("AssignedTo")

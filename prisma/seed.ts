@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -124,6 +125,32 @@ async function main() {
     console.log(`✓ Created role: ${roleData.name}`);
   }
 
+  // Optional: create initial SuperAdmin so they can sign in and approve others
+  const adminEmail = process.env.DEFAULT_ADMIN_EMAIL;
+  const adminPassword = process.env.DEFAULT_ADMIN_PASSWORD;
+  if (adminEmail && adminPassword) {
+    const superAdminRole = await prisma.role.findUnique({
+      where: { name: 'SuperAdmin' },
+    });
+    const existingAdmin = await prisma.user.findUnique({
+      where: { email: adminEmail },
+    });
+    if (superAdminRole && !existingAdmin) {
+      const hashedPassword = await bcrypt.hash(adminPassword, 10);
+      await prisma.user.create({
+        data: {
+          email: adminEmail,
+          password: hashedPassword,
+          firstName: 'Super',
+          lastName: 'Admin',
+          roleId: superAdminRole.id,
+          status: 'APPROVED',
+        },
+      });
+      console.log(`✓ Created initial SuperAdmin: ${adminEmail}`);
+    }
+  }
+
   console.log('✅ Seeding completed!');
   console.log('\n📋 Created roles:');
   const allRoles = await prisma.role.findMany();
@@ -132,6 +159,9 @@ async function main() {
   });
 
   console.log('\n💡 Use these role IDs when creating users via sign-up API');
+  if (!adminEmail || !adminPassword) {
+    console.log('   Set DEFAULT_ADMIN_EMAIL and DEFAULT_ADMIN_PASSWORD in .env to create an initial SuperAdmin on seed.');
+  }
 }
 
 main()

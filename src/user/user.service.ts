@@ -1,21 +1,29 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { UserStatus } from '@prisma/client';
+import { FindAllUsersQueryDto } from './dto/find-all-users-query.dto';
 
 @Injectable()
 export class UserService {
   constructor(private prisma: PrismaService) {}
 
   /**
-   * Get all users with their roles
+   * Get all users with their roles, optionally filtered by status
    */
-  async findAll() {
+  async findAll(query?: FindAllUsersQueryDto) {
+    const where = query?.status ? { status: query.status as UserStatus } : {};
     const users = await this.prisma.user.findMany({
+      where,
       include: {
         role: true,
       },
+      orderBy: { createdAt: 'desc' },
     });
 
-    // Remove password from results
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return users.map(({ password, ...user }) => user);
   }
@@ -68,6 +76,70 @@ export class UserService {
 
     return {
       message: 'User role updated successfully',
+      user: userWithoutPassword,
+    };
+  }
+
+  /**
+   * Approve a pending registration. Only users with status PENDING can be approved.
+   */
+  async approve(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { role: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+    if (user.status !== 'PENDING') {
+      throw new BadRequestException(
+        `User is not pending approval (current status: ${user.status})`,
+      );
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { status: 'APPROVED' },
+      include: { role: true },
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...userWithoutPassword } = updated;
+    return {
+      message: 'User approved. They can now sign in.',
+      user: userWithoutPassword,
+    };
+  }
+
+  /**
+   * Reject a pending registration.
+   */
+  async reject(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { role: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+    if (user.status !== 'PENDING') {
+      throw new BadRequestException(
+        `User is not pending approval (current status: ${user.status})`,
+      );
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { status: 'REJECTED' },
+      include: { role: true },
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...userWithoutPassword } = updated;
+    return {
+      message: 'Registration rejected.',
       user: userWithoutPassword,
     };
   }

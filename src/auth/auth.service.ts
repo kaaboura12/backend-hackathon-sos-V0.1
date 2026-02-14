@@ -50,8 +50,7 @@ export class AuthService {
       10,
     )) as string;
 
-    // 4. Create user
-
+    // 4. Create user with PENDING status (must be approved by SuperAdmin to sign in)
     const user = await this.prisma.user.create({
       data: {
         email: signUpDto.email,
@@ -60,17 +59,18 @@ export class AuthService {
         lastName: signUpDto.lastName,
         roleId: signUpDto.roleId,
         villageName: signUpDto.villageName,
-      },
+        status: 'PENDING',
+      } as { email: string; password: string; firstName: string; lastName: string; roleId: string; villageName?: string; status: 'PENDING' },
       include: {
-        role: true, // Include role to return in response
+        role: true,
       },
     });
 
-    // 5. Return user without password
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...userWithoutPassword } = user;
     return {
-      message: 'User created successfully',
+      message:
+        'Registration submitted. You will be able to sign in once an administrator approves your account.',
       user: userWithoutPassword,
     };
   }
@@ -90,6 +90,18 @@ export class AuthService {
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const status = (user as { status?: string }).status;
+    if (status === 'PENDING') {
+      throw new UnauthorizedException(
+        'Your account is pending approval. Please wait for an administrator to approve your registration.',
+      );
+    }
+    if (status === 'REJECTED') {
+      throw new UnauthorizedException(
+        'Your registration was rejected. Contact an administrator for more information.',
+      );
     }
 
     // 2. Verify password
@@ -126,6 +138,17 @@ export class AuthService {
         permissions: user.role.permissions,
       },
     };
+  }
+
+  /**
+   * List roles for sign-up form (public).
+   * Returns only id, name, description so users can choose a role when registering.
+   */
+  async getRolesForSignUp() {
+    return this.prisma.role.findMany({
+      select: { id: true, name: true, description: true },
+      orderBy: { name: 'asc' },
+    });
   }
 
   /**

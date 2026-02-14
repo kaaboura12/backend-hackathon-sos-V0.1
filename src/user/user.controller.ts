@@ -5,6 +5,7 @@ import {
   Delete,
   Patch,
   Body,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -14,8 +15,10 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { UserService } from './user.service';
+import { FindAllUsersQueryDto } from './dto/find-all-users-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { Permissions } from '../auth/decorators/permissions.decorator';
@@ -32,7 +35,12 @@ export class UserController {
   @ApiOperation({
     summary: 'Get all users',
     description:
-      'Retrieve list of all users with their roles. Requires USER_READ permission.',
+      'Retrieve list of users with their roles. Use query ?status=PENDING to list registration requests awaiting approval. Requires USER_READ permission.',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['PENDING', 'APPROVED', 'REJECTED'],
   })
   @ApiResponse({
     status: 200,
@@ -45,6 +53,7 @@ export class UserController {
           firstName: 'John',
           lastName: 'Doe',
           villageName: 'Village Gammarth',
+          status: 'PENDING',
           role: {
             id: '6990a2530ea1533dee1111e9',
             name: 'Psychologue',
@@ -57,8 +66,46 @@ export class UserController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Missing USER_READ permission' })
-  findAll() {
-    return this.userService.findAll();
+  findAll(@Query() query: FindAllUsersQueryDto) {
+    return this.userService.findAll(query);
+  }
+
+  @Patch(':id/approve')
+  @Permissions('USER_MANAGE')
+  @ApiOperation({
+    summary: 'Approve pending registration',
+    description:
+      'Approve a user who signed up. After approval they can sign in. Requires USER_MANAGE (SuperAdmin).',
+  })
+  @ApiParam({ name: 'id', description: 'User ID to approve' })
+  @ApiResponse({
+    status: 200,
+    description: 'User approved; they can now sign in',
+  })
+  @ApiResponse({ status: 400, description: 'User is not pending' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 403, description: 'Missing USER_MANAGE permission' })
+  approve(@Param('id') id: string) {
+    return this.userService.approve(id);
+  }
+
+  @Patch(':id/reject')
+  @Permissions('USER_MANAGE')
+  @ApiOperation({
+    summary: 'Reject pending registration',
+    description:
+      'Reject a registration request. User will not be able to sign in. Requires USER_MANAGE (SuperAdmin).',
+  })
+  @ApiParam({ name: 'id', description: 'User ID to reject' })
+  @ApiResponse({
+    status: 200,
+    description: 'Registration rejected',
+  })
+  @ApiResponse({ status: 400, description: 'User is not pending' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 403, description: 'Missing USER_MANAGE permission' })
+  reject(@Param('id') id: string) {
+    return this.userService.reject(id);
   }
 
   @Get(':id')

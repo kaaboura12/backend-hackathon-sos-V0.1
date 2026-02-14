@@ -30,31 +30,48 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
+  @Get('roles')
+  @ApiOperation({
+    summary: 'List roles for sign-up',
+    description:
+      'Public endpoint. Returns all roles (id, name, description) so the user can choose one when registering. Used by the sign-up form.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of roles for sign-up dropdown',
+    schema: {
+      example: [
+        { id: '6990a2530ea1533dee1111e7', name: 'Mère SOS', description: 'SOS Mother - can create reports' },
+        { id: '6990a2530ea1533dee1111e9', name: 'Psychologue', description: 'Psychologist - DPE and evaluations' },
+      ],
+    },
+  })
+  getRolesForSignUp() {
+    return this.authService.getRolesForSignUp();
+  }
+
+  @Public()
   @Post('sign-up')
   @ApiOperation({
     summary: 'Register new user',
     description:
-      'Create a new user account with a specific role. Requires a valid roleId from the database. Use GET /roles to see available roles and their IDs.',
+      'Create a new user account with a chosen role. User is created with status PENDING and can sign in only after a SuperAdmin approves the request. Use GET /auth/roles to list roles for the sign-up form.',
   })
   @ApiBody({ type: SignUpDto })
   @ApiResponse({
     status: 201,
-    description: 'User created successfully',
+    description: 'Registration submitted (pending approval)',
     schema: {
       example: {
-        message: 'User created successfully',
+        message: 'Registration submitted. You will be able to sign in once an administrator approves your account.',
         user: {
           id: '6990a2530ea1533dee1111ed',
           email: 'user@sos.tn',
           firstName: 'John',
           lastName: 'Doe',
           villageName: 'Village Gammarth',
-          roleId: '6990a2530ea1533dee1111e7',
-          role: {
-            id: '6990a2530ea1533dee1111e7',
-            name: 'Psychologue',
-            permissions: ['REPORT_READ', 'DOC_UPLOAD_DPE'],
-          },
+          status: 'PENDING',
+          role: { id: '6990a2530ea1533dee1111e7', name: 'Psychologue', description: '...' },
           createdAt: '2024-01-15T10:30:00.000Z',
         },
       },
