@@ -63,7 +63,11 @@ model Report {
   childName       String
   abuserName      String?      
   description     String       // "Champ libre"
-  
+
+  // AI: détection de mots-clés critiques (offline NLP)
+  isCritical      Boolean      @default(false)
+  criticalMatchedWords String[] @default([])
+
   // Media Attachments (Photos, Audio, Video) [cite: 58]
   attachments     Attachment[] 
 

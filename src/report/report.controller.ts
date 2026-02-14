@@ -101,6 +101,40 @@ export class ReportController {
     return this.reportService.create(createReportDto, user.sub, files);
   }
 
+  @Post('analyze-urgency')
+  @Permissions('REPORT_CREATE')
+  @ApiOperation({
+    summary: 'Analyze description for critical keywords',
+    description:
+      'Détection de mots-clés critiques: returns whether the text contains critical French roots (violence, danger, abuse, etc.) and the matched words. Use when drafting a report to show a warning or suggest higher urgency.',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['description'],
+      properties: {
+        description: {
+          type: 'string',
+          example: "L'enfant signale des coups et une grande peur.",
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Analysis result',
+    schema: {
+      example: {
+        isCritical: true,
+        matchedWords: ['coups', 'peur'],
+      },
+    },
+  })
+  @ApiResponse({ status: 403, description: 'Missing REPORT_CREATE permission' })
+  analyzeUrgency(@Body('description') description: string) {
+    return this.reportService.analyzeDescription(description ?? '');
+  }
+
   @Get()
   @Permissions('REPORT_READ')
   @ApiOperation({

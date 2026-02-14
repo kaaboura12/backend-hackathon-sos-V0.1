@@ -16,17 +16,24 @@ import { CloseReportDto } from './dto/close-report.dto';
 import type { ReportFiltersDto } from './dto/report-filters.dto';
 import { getFileType } from '../common/config/multer.config';
 import { VoiceAnonymizerService } from '../voice-anonymizer/voice-anonymizer.service';
+import { AiService } from './ai.service';
 
 const ARCHIVED_ERROR =
   'Cannot modify archived report. Case is closed and sealed.';
 
 @Injectable()
 export class ReportService {
+  /** Expose AI urgency analysis for description (e.g. from report form). */
+  analyzeDescription(description: string) {
+    return this.aiService.analyzeUrgency(description ?? '');
+  }
+
   constructor(
     private prisma: PrismaService,
     @Inject(forwardRef(() => NotificationService))
     private notificationService: NotificationService,
     private voiceAnonymizer: VoiceAnonymizerService,
+    private aiService: AiService,
   ) {}
 
   async create(
@@ -71,12 +78,19 @@ export class ReportService {
       filename: file.originalname,
     }));
 
+    // Détection de mots-clés critiques (offline NLP)
+    const urgencyAnalysis = this.aiService.analyzeUrgency(
+      createReportDto.description,
+    );
+
     const report = await this.prisma.report.create({
       data: {
         ...createReportDto,
         reporterId,
         status: 'ATTENTE',
         attachments,
+        isCritical: urgencyAnalysis.isCritical,
+        criticalMatchedWords: urgencyAnalysis.matchedWords,
       },
       include: {
         reporter: {
@@ -101,8 +115,13 @@ export class ReportService {
       },
     });
 
-    // Notify Directeur for urgent reports
-    if (report.urgency === 'CRITIQUE' || report.urgency === 'HAUTE') {
+    // Notify Directeur for urgent reports or when critical keywords are detected
+    const shouldNotifyUrgent =
+      report.urgency === 'CRITIQUE' ||
+      report.urgency === 'HAUTE' ||
+      report.isCritical;
+
+    if (shouldNotifyUrgent) {
       const directeurs = await this.prisma.user.findMany({
         where: {
           role: {
@@ -112,11 +131,15 @@ export class ReportService {
         select: { id: true },
       });
 
+      const urgencyLabel = report.isCritical
+        ? 'CRITIQUE (mots-clés détectés)'
+        : report.urgency;
+
       await this.notificationService.notifyUrgentReport(
         directeurs.map((d) => d.id),
         report.id,
         report.incidentType,
-        report.urgency,
+        urgencyLabel,
       );
     }
 
@@ -379,11 +402,20 @@ export class ReportService {
     // Merge existing attachments with new ones
     const attachments = [...report.attachments, ...newAttachments];
 
+    const urgencyAnalysis =
+      updateReportDto.description !== undefined
+        ? this.aiService.analyzeUrgency(updateReportDto.description)
+        : null;
+
     const updatedReport = await this.prisma.report.update({
       where: { id },
       data: {
         ...updateReportDto,
         attachments,
+        ...(urgencyAnalysis && {
+          isCritical: urgencyAnalysis.isCritical,
+          criticalMatchedWords: urgencyAnalysis.matchedWords,
+        }),
       },
       include: {
         reporter: {
