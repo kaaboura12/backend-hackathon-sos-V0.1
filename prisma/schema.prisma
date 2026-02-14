@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------
+// 1. DYNAMIC GOVERNANCE (Future-Proof RBAC)
+// ---------------------------------------------------------
+// This satisfies the "5 years later" requirement where a SuperAdmin 
+// can create new roles and assign specific privileges[cite: 96, 99].
+
+model User {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  email         String    @unique
+  password      String
+  firstName     String
+  lastName      String
+  villageName   String?   // "Programme (village)" [cite: 51]
+  
+  roleId        String    @db.ObjectId
+  role          Role      @relation(fields: [roleId], references: [id])
+
+  reportsCreated  Report[]       @relation("CreatedBy")
+  reportsAssigned Report[]       @relation("AssignedTo")
+  auditLogs       AuditLog[]
+  notifications   Notification[]
+
+  createdAt     DateTime  @default(now())
+}
+
+model Role {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique // e.g., "Mère SOS", "Psychologue", "Directeur"
+  description String?
+  permissions String[] // e.g., ["CREATE_REPORT", "UPLOAD_DPE", "CLOSE_CASE"]
+  users       User[]
+}
+
+// ---------------------------------------------------------
+// 2. INCIDENT REPORTING (The "Dossier")
+// ---------------------------------------------------------
+
+model Report {
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  
+  // Niveau 1 Requirements [cite: 48-58]
+  incidentType    String       // santé, comportement, violence, etc.
+  urgency         String       // Niveau d'urgence
+  status          String       @default("ATTENTE") // attente, en cours, fausse, cloturé [cite: 59]
+  isAnonymous     Boolean      @default(false)
+  villageName     String       
+  childName       String
+  abuserName      String?      
+  description     String       // "Champ libre"
+  
+  // Media Attachments (Photos, Audio, Video) [cite: 58]
+  attachments     Attachment[] 
+
+  // Niveau 2: Specific Procedure Documents [cite: 69-75]
+  // This satisfies the need for Fiche Initial, Rapport DPE, Plan d'action, etc.
+  documents       Document[]
+
+  // Workflow Ownership [cite: 47]
+  reporterId      String       @db.ObjectId
+  reporter        User         @relation("CreatedBy", fields: [reporterId], references: [id])
+  
+  analystId       String?      @db.ObjectId
+  analyst         User?        @relation("AssignedTo", fields: [analystId], references: [id])
+
+  // Critical for Archiving and Traceability [cite: 40, 85, 98]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  closedAt        DateTime?
+  isArchived      Boolean        @default(false) // Level 3: Secure archival, no edits allowed
+  closureDecision String?        // prise en charge, sanction, suivi - formal decision on closure
+
+  auditLogs       AuditLog[]
+  notifications   Notification[]
+}
+
+// ---------------------------------------------------------
+// 3. SUPPORTING MODELS (Security & Traceability)
+// ---------------------------------------------------------
+
+model Document {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  type        String   // FICHE_INITIAL, RAPPORT_DPE, EVALUATION, PLAN_ACTION, SUIVI, RAPPORT_FINAL, CLOTURE
+  fileUrl     String
+  uploadedBy  String   // Name or ID of the analyst
+  reportId    String   @db.ObjectId
+  report      Report   @relation(fields: [reportId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+type Attachment {
+  url       String
+  type      String   // image, audio, video
+  filename  String
+}
+
+// Requirement 4.2: Journalisation complète (Audit Logs) 
+model AuditLog {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  action    String   // e.g., "STATUS_CHANGE", "DOCUMENT_UPLOAD"
+  details   String   // Descriptive text of what changed
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id])
+  reportId  String?  @db.ObjectId
+  report    Report?  @relation(fields: [reportId], references: [id])
+  timestamp DateTime @default(now())
+}
+
+// Real-time notifications for analysts
+model Notification {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   // REPORT_ASSIGNED, DOCUMENT_UPLOADED, URGENT_REPORT, etc.
+  title     String
+  message   String
+  reportId  String?  @db.ObjectId
+  report    Report?  @relation(fields: [reportId], references: [id])
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}

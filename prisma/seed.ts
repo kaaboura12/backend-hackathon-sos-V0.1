@@ -1,0 +1,144 @@
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+async function main() {
+  console.log('🌱 Seeding database...');
+
+  // Create roles with permissions based on SOS Village requirements
+  const roles = [
+    {
+      name: 'SuperAdmin',
+      description: 'Full system access - can manage roles and permissions',
+      permissions: [
+        // All permissions
+        'REPORT_CREATE',
+        'REPORT_READ',
+        'REPORT_UPDATE',
+        'REPORT_DELETE',
+        'REPORT_CLASSIFY',
+        'REPORT_ASSIGN',
+        'CASE_CLOSE',
+        'DOC_UPLOAD_FICHE_INITIAL',
+        'DOC_UPLOAD_DPE',
+        'DOC_UPLOAD_EVALUATION',
+        'DOC_UPLOAD_PLAN_ACTION',
+        'DOC_UPLOAD_SUIVI',
+        'DOC_UPLOAD_RAPPORT_FINAL',
+        'DOC_UPLOAD_CLOTURE',
+        'DOC_READ',
+        'DOC_DELETE',
+        'USER_READ',
+        'USER_CREATE',
+        'USER_UPDATE',
+        'USER_DELETE',
+        'USER_MANAGE',
+        'ROLE_CREATE',
+        'ROLE_READ',
+        'ROLE_UPDATE',
+        'ROLE_DELETE',
+        'AUDIT_READ',
+        'STATS_VIEW',
+      ],
+    },
+    {
+      name: 'Mère SOS',
+      description: 'SOS Mother - can create reports and view basic information',
+      permissions: [
+        'REPORT_CREATE', // Create incident reports
+        'REPORT_READ', // View reports they created
+      ],
+    },
+    {
+      name: 'Psychologue',
+      description: 'Psychologist - can handle DPE and evaluations',
+      permissions: [
+        'REPORT_READ',
+        'REPORT_UPDATE',
+        'REPORT_CLASSIFY', // Can mark as false/closed
+        'DOC_UPLOAD_DPE', // Upload DPE report
+        'DOC_UPLOAD_EVALUATION',
+        'DOC_READ',
+        'STATS_VIEW',
+      ],
+    },
+    {
+      name: 'Assistant Social',
+      description: 'Social Worker - can create action plans and follow-ups',
+      permissions: [
+        'REPORT_READ',
+        'REPORT_UPDATE',
+        'DOC_UPLOAD_PLAN_ACTION',
+        'DOC_UPLOAD_SUIVI',
+        'DOC_READ',
+        'STATS_VIEW',
+      ],
+    },
+    {
+      name: 'Directeur',
+      description: 'Director - full report management and oversight',
+      permissions: [
+        'REPORT_READ',
+        'REPORT_UPDATE',
+        'REPORT_ASSIGN',
+        'REPORT_CLASSIFY',
+        'CASE_CLOSE', // Close and archive with formal decision
+        'DOC_UPLOAD_RAPPORT_FINAL',
+        'DOC_UPLOAD_CLOTURE',
+        'DOC_READ',
+        'DOC_DELETE',
+        'USER_READ',
+        'AUDIT_READ',
+        'STATS_VIEW',
+      ],
+    },
+    {
+      name: 'Direction Nationale',
+      description: 'National Bureau - oversight and formal closure decisions',
+      permissions: [
+        'REPORT_READ',
+        'CASE_CLOSE', // Formal closure and archival
+        'DOC_READ',
+        'USER_READ',
+        'AUDIT_READ',
+        'STATS_VIEW',
+      ],
+    },
+  ];
+
+  // Create roles
+  for (const roleData of roles) {
+    const existingRole = await prisma.role.findUnique({
+      where: { name: roleData.name },
+    });
+
+    if (existingRole) {
+      console.log(`✓ Role "${roleData.name}" already exists`);
+      continue;
+    }
+
+    await prisma.role.create({
+      data: roleData,
+    });
+
+    console.log(`✓ Created role: ${roleData.name}`);
+  }
+
+  console.log('✅ Seeding completed!');
+  console.log('\n📋 Created roles:');
+  const allRoles = await prisma.role.findMany();
+  allRoles.forEach((role) => {
+    console.log(`   - ${role.name} (ID: ${role.id})`);
+  });
+
+  console.log('\n💡 Use these role IDs when creating users via sign-up API');
+}
+
+main()
+  .catch((e) => {
+    console.error('❌ Error seeding database:', e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
