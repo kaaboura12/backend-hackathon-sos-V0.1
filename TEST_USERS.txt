@@ -1,0 +1,59 @@
+================================================================================
+  SOS BACKEND – TEST USERS (login & permissions)
+  Password for all: Test1234
+  Sign-in: POST /auth/sign-in  with body: { "email": "...", "password": "Test1234" }
+================================================================================
+
+1. MÈRE SOS (Terrain – Déclarant)
+   Email:    mere.sos@sos.tn
+   Password: Test1234
+   Permissions: REPORT_CREATE, REPORT_READ
+   → Create reports, view own reports only.
+
+--------------------------------------------------------------------------------
+
+2. PSYCHOLOGUE (Niveau 2 – Analyse & Traitement)
+   Email:    psychologue@sos.tn
+   Password: Test1234
+   Permissions: REPORT_READ, REPORT_UPDATE, REPORT_CLASSIFY, DOC_UPLOAD_DPE,
+                DOC_UPLOAD_EVALUATION, DOC_READ, STATS_VIEW
+   → View/update reports, classify, upload DPE & Evaluation, dashboard stats.
+
+--------------------------------------------------------------------------------
+
+3. ASSISTANT SOCIAL (Niveau 2 – Analyse & Traitement)
+   Email:    assistant.social@sos.tn
+   Password: Test1234
+   Permissions: REPORT_READ, REPORT_UPDATE, DOC_UPLOAD_PLAN_ACTION,
+                DOC_UPLOAD_SUIVI, DOC_READ, STATS_VIEW
+   → View/update reports, upload Plan d’action & Suivi, dashboard stats.
+
+--------------------------------------------------------------------------------
+
+4. DIRECTEUR (Niveau 3 – Gouvernance Village)
+   Email:    directeur@sos.tn
+   Password: Test1234
+   Permissions: REPORT_READ, REPORT_UPDATE, REPORT_ASSIGN, REPORT_CLASSIFY,
+                CASE_CLOSE, DOC_UPLOAD_RAPPORT_FINAL, DOC_UPLOAD_CLOTURE,
+                DOC_READ, DOC_DELETE, USER_READ, AUDIT_READ, STATS_VIEW
+   → Assign analysts, close cases, upload final/closure docs, see users & audit.
+
+--------------------------------------------------------------------------------
+
+5. DIRECTION NATIONALE (Niveau 3 – Bureau National)
+   Email:    direction.nationale@sos.tn
+   Password: Test1234
+   Permissions: REPORT_READ, CASE_CLOSE, DOC_READ, USER_READ, AUDIT_READ, STATS_VIEW
+   → Vue globale, formal closure, read users & audit, stats.
+
+--------------------------------------------------------------------------------
+
+6. SUPERADMIN
+   Email:    superadmin@sos.tn
+   Password: Test1234
+   Permissions: All (reports, documents, users, roles, villages, audit, stats).
+   → Approve pending sign-ups, manage roles, villages, and full system.
+
+================================================================================
+  Run seed to create these users:  npx prisma db seed
+================================================================================

@@ -146,10 +146,47 @@ async function main() {
     }
   }
 
-  // Optional: create initial SuperAdmin so they can sign in and approve others
+  // Test users (one per role) – same password for all: Test1234
+  const testPassword = await bcrypt.hash('Test1234', 10);
+  const allRoles = await prisma.role.findMany();
+  const firstVillage = await prisma.village.findFirst();
+  const villageId = firstVillage?.id ?? null;
+
+  const testUsers = [
+    { email: 'mere.sos@sos.tn', firstName: 'Marie', lastName: 'Dupont', roleName: 'Mère SOS' },
+    { email: 'psychologue@sos.tn', firstName: 'Sophie', lastName: 'Martin', roleName: 'Psychologue' },
+    { email: 'assistant.social@sos.tn', firstName: 'Karim', lastName: 'Ben Ali', roleName: 'Assistant Social' },
+    { email: 'directeur@sos.tn', firstName: 'Ahmed', lastName: 'Trabelsi', roleName: 'Directeur' },
+    { email: 'direction.nationale@sos.tn', firstName: 'Nadia', lastName: 'Jlassi', roleName: 'Direction Nationale' },
+    { email: 'superadmin@sos.tn', firstName: 'Super', lastName: 'Admin', roleName: 'SuperAdmin' },
+  ];
+
+  for (const u of testUsers) {
+    const existing = await prisma.user.findUnique({ where: { email: u.email } });
+    if (existing) {
+      console.log(`✓ Test user "${u.email}" already exists`);
+      continue;
+    }
+    const role = allRoles.find((r) => r.name === u.roleName);
+    if (!role) continue;
+    await prisma.user.create({
+      data: {
+        email: u.email,
+        password: testPassword,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        roleId: role.id,
+        villageId,
+        status: 'APPROVED',
+      },
+    });
+    console.log(`✓ Created test user: ${u.email} (${u.roleName})`);
+  }
+
+  // Optional: create initial SuperAdmin from env (if different from test user)
   const adminEmail = process.env.DEFAULT_ADMIN_EMAIL;
   const adminPassword = process.env.DEFAULT_ADMIN_PASSWORD;
-  if (adminEmail && adminPassword) {
+  if (adminEmail && adminPassword && adminEmail !== 'superadmin@sos.tn') {
     const superAdminRole = await prisma.role.findUnique({
       where: { name: 'SuperAdmin' },
     });
@@ -174,15 +211,10 @@ async function main() {
 
   console.log('✅ Seeding completed!');
   console.log('\n📋 Created roles:');
-  const allRoles = await prisma.role.findMany();
   allRoles.forEach((role) => {
     console.log(`   - ${role.name} (ID: ${role.id})`);
   });
-
-  console.log('\n💡 Use these role IDs when creating users via sign-up API');
-  if (!adminEmail || !adminPassword) {
-    console.log('   Set DEFAULT_ADMIN_EMAIL and DEFAULT_ADMIN_PASSWORD in .env to create an initial SuperAdmin on seed.');
-  }
+  console.log('\n📄 See TEST_USERS.txt for login credentials and permissions.');
 }
 
 main()
