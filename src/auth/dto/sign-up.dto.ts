@@ -5,7 +5,7 @@ import {
   MinLength,
   IsOptional,
 } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class SignUpDto {
   @ApiProperty({
@@ -51,12 +51,12 @@ export class SignUpDto {
   @IsNotEmpty()
   roleId: string;
 
-  @ApiProperty({
-    example: 'Village Gammarth',
-    description: 'Village name (optional, for programme)',
-    required: false,
+  @ApiPropertyOptional({
+    example: '6990a2530ea1533dee1111e8',
+    description:
+      'Village ID (optional). Use GET /villages to list villages. Required for some roles.',
   })
   @IsString()
   @IsOptional()
-  villageName?: string;
+  villageId?: string;
 }

@@ -20,6 +20,7 @@ export class UserService {
       where,
       include: {
         role: true,
+        village: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -36,6 +37,7 @@ export class UserService {
       where: { id },
       include: {
         role: true,
+        village: { select: { id: true, name: true } },
       },
     });
 

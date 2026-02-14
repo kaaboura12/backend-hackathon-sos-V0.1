@@ -52,7 +52,7 @@ export class UserController {
           email: 'user@sos.tn',
           firstName: 'John',
           lastName: 'Doe',
-          villageName: 'Village Gammarth',
+          village: { id: '...', name: 'Village Gammarth' },
           status: 'PENDING',
           role: {
             id: '6990a2530ea1533dee1111e9',
@@ -163,7 +163,7 @@ export class UserController {
           email: 'user@sos.tn',
           firstName: 'John',
           lastName: 'Doe',
-          villageName: 'Village Gammarth',
+          village: { id: '...', name: 'Village Gammarth' },
           role: {
             id: '6990a2530ea1533dee1111e9',
             name: 'Psychologue',

@@ -39,6 +39,7 @@ async function bootstrap() {
     .addTag('auth', 'Authentication endpoints')
     .addTag('roles', 'Role management (SuperAdmin)')
     .addTag('users', 'User management')
+    .addTag('villages', 'Village/programme management (SuperAdmin)')
     .addTag('reports', 'Incident reports (Signalements)')
     .addTag('documents', 'Procedure documents (DPE, Action Plans, etc.)')
     .addTag('notifications', 'Real-time notifications for analysts')

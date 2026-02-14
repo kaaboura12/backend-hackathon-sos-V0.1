@@ -78,6 +78,15 @@ export class ReportService {
       filename: file.originalname,
     }));
 
+    const village = await this.prisma.village.findUnique({
+      where: { id: createReportDto.villageId },
+    });
+    if (!village) {
+      throw new NotFoundException(
+        `Village with ID ${createReportDto.villageId} not found. Use GET /villages to list villages.`,
+      );
+    }
+
     // Détection de mots-clés critiques (offline NLP)
     const urgencyAnalysis = this.aiService.analyzeUrgency(
       createReportDto.description,
@@ -100,8 +109,10 @@ export class ReportService {
             lastName: true,
             email: true,
             role: true,
+            village: true,
           },
         },
+        village: true,
       },
     });
 
@@ -109,7 +120,7 @@ export class ReportService {
     await this.prisma.auditLog.create({
       data: {
         action: 'REPORT_CREATED',
-        details: `Report created: ${report.incidentType} at ${report.villageName}`,
+        details: `Report created: ${report.incidentType} at ${report.village.name}`,
         userId: reporterId,
         reportId: report.id,
       },
@@ -140,6 +151,7 @@ export class ReportService {
         report.id,
         report.incidentType,
         urgencyLabel,
+        report.village.name,
       );
     }
 
@@ -168,8 +180,8 @@ export class ReportService {
     }
 
     // Level 3: Vue globale - filters for Direction/Bureau National
-    if (filters?.villageName) {
-      where.villageName = filters.villageName;
+    if (filters?.villageId) {
+      where.villageId = filters.villageId;
     }
     if (filters?.status) {
       where.status = filters.status;
@@ -209,7 +221,7 @@ export class ReportService {
             firstName: true,
             lastName: true,
             email: true,
-            villageName: true,
+            village: { select: { id: true, name: true } },
             role: { select: { name: true } },
           },
         },
@@ -222,6 +234,7 @@ export class ReportService {
             role: { select: { name: true } },
           },
         },
+        village: { select: { id: true, name: true } },
         documents: {
           select: {
             id: true,
@@ -258,7 +271,7 @@ export class ReportService {
             firstName: 'Anonymous',
             lastName: 'Reporter',
             email: 'anonymous@hidden',
-            villageName: report.villageName,
+            village: report.village,
             role: { name: 'Hidden' },
           },
         };
@@ -284,7 +297,7 @@ export class ReportService {
             firstName: true,
             lastName: true,
             email: true,
-            villageName: true,
+            village: { select: { id: true, name: true } },
             role: { select: { name: true } },
           },
         },
@@ -297,6 +310,7 @@ export class ReportService {
             role: { select: { name: true } },
           },
         },
+        village: { select: { id: true, name: true } },
         documents: {
           orderBy: { createdAt: 'desc' },
         },
@@ -338,7 +352,7 @@ export class ReportService {
           firstName: 'Anonymous',
           lastName: 'Reporter',
           email: 'anonymous@hidden',
-          villageName: report.villageName,
+          village: report.village,
           role: { name: 'Hidden' },
         },
       };
@@ -402,6 +416,17 @@ export class ReportService {
     // Merge existing attachments with new ones
     const attachments = [...report.attachments, ...newAttachments];
 
+    if (updateReportDto.villageId !== undefined) {
+      const village = await this.prisma.village.findUnique({
+        where: { id: updateReportDto.villageId },
+      });
+      if (!village) {
+        throw new NotFoundException(
+          `Village with ID ${updateReportDto.villageId} not found. Use GET /villages to list villages.`,
+        );
+      }
+    }
+
     const urgencyAnalysis =
       updateReportDto.description !== undefined
         ? this.aiService.analyzeUrgency(updateReportDto.description)
@@ -426,6 +451,7 @@ export class ReportService {
             role: { select: { name: true } },
           },
         },
+        village: { select: { id: true, name: true } },
         analyst: {
           select: {
             id: true,
@@ -515,6 +541,7 @@ export class ReportService {
             lastName: true,
           },
         },
+        village: { select: { id: true, name: true } },
         analyst: {
           select: {
             firstName: true,
@@ -540,7 +567,7 @@ export class ReportService {
       assignDto.analystId,
       id,
       updatedReport.incidentType,
-      updatedReport.villageName,
+      updatedReport.village.name,
     );
 
     // Note: Directeur can assign, so they can see identity even for anonymous reports

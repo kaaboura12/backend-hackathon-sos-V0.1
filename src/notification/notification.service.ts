@@ -52,13 +52,15 @@ export class NotificationService {
     reportId: string,
     reportType: string,
     urgency: string,
+    villageName?: string,
   ) {
+    const villageText = villageName ? ` à ${villageName}` : '';
     const notifications = userIds.map((userId) =>
       this.create(
         userId,
         NotificationType.URGENT_REPORT,
         `Signalement URGENT: ${urgency}`,
-        `Nouveau signalement urgent de type "${reportType}". Action immédiate requise.`,
+        `Nouveau signalement urgent de type "${reportType}"${villageText}. Action immédiate requise.`,
         reportId,
       ),
     );
@@ -92,7 +94,7 @@ export class NotificationService {
           select: {
             id: true,
             incidentType: true,
-            villageName: true,
+            village: { select: { id: true, name: true } },
             status: true,
             urgency: true,
           },

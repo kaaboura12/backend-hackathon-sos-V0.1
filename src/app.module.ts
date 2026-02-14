@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { RoleModule } from './role/role.module';
 import { ReportModule } from './report/report.module';
+import { VillageModule } from './village/village.module';
 import { DocumentModule } from './document/document.module';
 import { NotificationModule } from './notification/notification.module';
 import { DashboardModule } from './dashboard/dashboard.module';
@@ -25,6 +26,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     UserModule,
     RoleModule,
     ReportModule,
+    VillageModule,
     DocumentModule,
     NotificationModule,
     DashboardModule,

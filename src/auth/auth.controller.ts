@@ -69,7 +69,7 @@ export class AuthController {
           email: 'user@sos.tn',
           firstName: 'John',
           lastName: 'Doe',
-          villageName: 'Village Gammarth',
+          village: { id: '...', name: 'Village Gammarth' },
           status: 'PENDING',
           role: { id: '6990a2530ea1533dee1111e7', name: 'Psychologue', description: '...' },
           createdAt: '2024-01-15T10:30:00.000Z',

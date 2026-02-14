@@ -53,12 +53,12 @@ export class CreateReportDto {
   isAnonymous?: boolean;
 
   @ApiProperty({
-    example: 'Village Gammarth',
-    description: 'Village name where the incident occurred',
+    example: '6990a2530ea1533dee1111e8',
+    description: 'Village ID where the incident occurred. Use GET /villages to list villages.',
   })
   @IsString()
   @IsNotEmpty()
-  villageName: string;
+  villageId: string;
 
   @ApiProperty({
     example: 'Enfant X',

@@ -43,6 +43,17 @@ export class AuthService {
       );
     }
 
+    if (signUpDto.villageId) {
+      const village = await this.prisma.village.findUnique({
+        where: { id: signUpDto.villageId },
+      });
+      if (!village) {
+        throw new NotFoundException(
+          `Village with ID ${signUpDto.villageId} not found. Use GET /villages to list villages.`,
+        );
+      }
+    }
+
     // 3. Hash password
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     const hashedPassword = (await bcrypt.hash(
@@ -58,11 +69,12 @@ export class AuthService {
         firstName: signUpDto.firstName,
         lastName: signUpDto.lastName,
         roleId: signUpDto.roleId,
-        villageName: signUpDto.villageName,
+        villageId: signUpDto.villageId ?? undefined,
         status: 'PENDING',
-      } as { email: string; password: string; firstName: string; lastName: string; roleId: string; villageName?: string; status: 'PENDING' },
+      } as { email: string; password: string; firstName: string; lastName: string; roleId: string; villageId?: string; status: 'PENDING' },
       include: {
         role: true,
+        village: true,
       },
     });
 

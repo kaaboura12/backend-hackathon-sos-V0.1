@@ -38,6 +38,10 @@ async function main() {
         'ROLE_READ',
         'ROLE_UPDATE',
         'ROLE_DELETE',
+        'VILLAGE_CREATE',
+        'VILLAGE_READ',
+        'VILLAGE_UPDATE',
+        'VILLAGE_DELETE',
         'AUDIT_READ',
         'STATS_VIEW',
       ],
@@ -123,6 +127,23 @@ async function main() {
     });
 
     console.log(`✓ Created role: ${roleData.name}`);
+  }
+
+  // Default villages (SuperAdmin can add more via API)
+  const defaultVillages = [
+    { name: 'Gammarth (Tunis)', description: 'Programme SOS - Tunis' },
+    { name: 'Akouda (Sousse)', description: 'Programme SOS - Sousse' },
+    { name: 'Mahrès (Sfax)', description: 'Programme SOS - Sfax' },
+    { name: 'Siliana', description: 'Programme SOS - Siliana' },
+  ];
+  for (const v of defaultVillages) {
+    const existing = await prisma.village.findUnique({
+      where: { name: v.name },
+    });
+    if (!existing) {
+      await prisma.village.create({ data: v });
+      console.log(`✓ Created village: ${v.name}`);
+    }
   }
 
   // Optional: create initial SuperAdmin so they can sign in and approve others

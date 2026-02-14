@@ -168,6 +168,12 @@ export class RoleService {
         'ROLE_UPDATE',
         'ROLE_DELETE',
 
+        // Village Management (SuperAdmin)
+        'VILLAGE_CREATE',
+        'VILLAGE_READ',
+        'VILLAGE_UPDATE',
+        'VILLAGE_DELETE',
+
         // Audit Logs
         'AUDIT_READ',
 

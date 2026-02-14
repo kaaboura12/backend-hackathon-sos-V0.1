@@ -107,7 +107,7 @@ export class DocumentService {
           select: {
             id: true,
             incidentType: true,
-            villageName: true,
+            village: { select: { id: true, name: true } },
             status: true,
           },
         },

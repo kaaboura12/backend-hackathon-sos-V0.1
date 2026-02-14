@@ -15,7 +15,7 @@ export class ReportFiltersDto {
   })
   @IsOptional()
   @IsString()
-  villageName?: string;
+  villageId?: string;
 
   @ApiPropertyOptional({
     example: 'EN_COURS',

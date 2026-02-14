@@ -14,9 +14,10 @@ export class DashboardService {
           select: {
             firstName: true,
             lastName: true,
-            villageName: true,
+            village: { select: { id: true, name: true } },
           },
         },
+        village: { select: { id: true, name: true } },
         documents: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -91,6 +92,7 @@ export class DashboardService {
         status: 'EN_COURS',
       },
       include: {
+        village: { select: { id: true, name: true } },
         documents: true,
       },
     });
@@ -123,7 +125,7 @@ export class DashboardService {
         return {
           reportId: report.id,
           incidentType: report.incidentType,
-          villageName: report.villageName,
+          village: report.village,
           urgency: report.urgency,
           daysSinceCreated: daysSince,
           missingDocuments: missing,
@@ -163,13 +165,14 @@ export class DashboardService {
             select: {
               firstName: true,
               lastName: true,
-              villageName: true,
+              village: { select: { id: true, name: true } },
             },
           },
+          village: { select: { id: true, name: true } },
         },
       }),
       this.prisma.report.groupBy({
-        by: ['villageName'],
+        by: ['villageId'],
         _count: true,
       }),
     ]);
@@ -209,7 +212,7 @@ export class DashboardService {
       recentReports: recentReports.map((r) => ({
         id: r.id,
         incidentType: r.incidentType,
-        villageName: r.villageName,
+        village: r.village,
         urgency: r.urgency,
         status: r.status,
         createdAt: r.createdAt,

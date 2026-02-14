@@ -75,7 +75,7 @@ export class ReportController {
           example: 'HAUTE',
         },
         isAnonymous: { type: 'boolean', example: false },
-        villageName: { type: 'string', example: 'Village Gammarth' },
+        villageId: { type: 'string', example: '6990a2530ea1533dee1111e8', description: 'Village ID from GET /villages' },
         childName: { type: 'string', example: 'Enfant X' },
         abuserName: { type: 'string', example: 'Person Y' },
         description: { type: 'string', example: 'Description détaillée...' },
@@ -143,7 +143,7 @@ export class ReportController {
       'Retrieve reports with optional filters. Level 3: Use villageName filter for "Vue globale par village". Mère SOS sees only own reports. Returns paginated results.',
   })
   @ApiQuery({
-    name: 'villageName',
+    name: 'villageId',
     required: false,
     description: 'Filter by village',
   })

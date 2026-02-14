@@ -19,24 +19,35 @@ enum UserStatus {
   REJECTED  // Registration rejected
 }
 
-model User {
-  id            String     @id @default(auto()) @map("_id") @db.ObjectId
-  email         String     @unique
-  password      String
-  firstName     String
-  lastName      String
-  villageName   String?    // "Programme (village)" [cite: 51]
-  status        UserStatus @default(PENDING)
+// Programme (village) – managed by SuperAdmin; users and reports reference this
+model Village {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique
+  description String?
+  users       User[]
+  reports     Report[]
+  createdAt   DateTime @default(now())
+}
 
-  roleId        String     @db.ObjectId
-  role         Role       @relation(fields: [roleId], references: [id])
+model User {
+  id         String     @id @default(auto()) @map("_id") @db.ObjectId
+  email      String     @unique
+  password   String
+  firstName  String
+  lastName   String
+  villageId  String?    @db.ObjectId
+  village    Village?   @relation(fields: [villageId], references: [id])
+  status     UserStatus @default(PENDING)
+
+  roleId     String     @db.ObjectId
+  role       Role       @relation(fields: [roleId], references: [id])
 
   reportsCreated  Report[]       @relation("CreatedBy")
   reportsAssigned Report[]       @relation("AssignedTo")
   auditLogs       AuditLog[]
   notifications   Notification[]
 
-  createdAt     DateTime  @default(now())
+  createdAt  DateTime  @default(now())
 }
 
 model Role {
@@ -59,7 +70,8 @@ model Report {
   urgency         String       // Niveau d'urgence
   status          String       @default("ATTENTE") // attente, en cours, fausse, cloturé [cite: 59]
   isAnonymous     Boolean      @default(false)
-  villageName     String       
+  villageId      String       @db.ObjectId
+  village        Village      @relation(fields: [villageId], references: [id])
   childName       String
   abuserName      String?      
   description     String       // "Champ libre"
